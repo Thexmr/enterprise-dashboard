@@ -5,6 +5,24 @@ Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [2.2.0] - 2024-03-16
+
+### Added
+- ✨ Multi-Channel Alerting System
+- ✨ E-Mail Benachrichtigungen (SMTP)
+- ✨ Slack Integration (Webhooks)
+- ✨ Discord Integration (Webhooks)
+- ✨ Generische Webhook Unterstützung
+- ✨ Alert Cooldown (keine Spam-Benachrichtigungen)
+- ✨ Alert Acknowledgement System
+- ✨ Konfigurierbare Alert Thresholds
+- ✨ HTML E-Mail Templates
+- ✨ Rich Embeds für Slack/Discord
+
+### Changed
+- 🔧 Alert Manager modularisiert
+- 🔧 Verbesserte Alert-Deduplizierung
+
 ## [2.1.0] - 2024-03-16
 
 ### Added
