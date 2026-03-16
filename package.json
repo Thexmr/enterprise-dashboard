@@ -1,16 +1,17 @@
 {
   "name": "enterprise-dashboard",
-  "version": "2.1.0",
-  "description": "Enterprise System Monitoring Dashboard with Authentication",
+  "version": "2.2.0",
+  "description": "Enterprise System Monitoring Dashboard with Authentication and Alerts",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "start:auth": "node server-auth.js",
+    "start:alerts": "node server-v2.2.js",
     "dev": "nodemon server.js",
     "test": "jest",
     "lint": "eslint ."
   },
-  "keywords": ["dashboard", "monitoring", "system", "enterprise", "authentication", "jwt"],
+  "keywords": ["dashboard", "monitoring", "system", "enterprise", "authentication", "jwt", "alerts", "notifications"],
   "author": "Thexmr",
   "license": "MIT",
   "dependencies": {
@@ -25,7 +26,8 @@
     "winston": "^3.11.0",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
-    "express-rate-limit": "^7.1.5"
+    "express-rate-limit": "^7.1.5",
+    "nodemailer": "^6.9.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.2",
