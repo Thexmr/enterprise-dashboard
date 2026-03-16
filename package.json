@@ -27,7 +27,7 @@
     "winston": "^3.11.0",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
-    "express-rate-limit": "^7.1.5",
+    "express-rate-limit": "^8.3.1",
     "nodemailer": "^6.9.7",
     "@influxdata/influxdb-client": "^1.33.2"
   },
