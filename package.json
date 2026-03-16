@@ -28,7 +28,7 @@
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
     "express-rate-limit": "^7.1.5",
-    "nodemailer": "^6.9.7",
+    "nodemailer": "^8.0.2",
     "@influxdata/influxdb-client": "^1.33.2"
   },
   "devDependencies": {
