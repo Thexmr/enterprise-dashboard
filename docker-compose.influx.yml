@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # Haupt-Dashboard Server
+  dashboard:
+    build: .
+    container_name: enterprise-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - UPDATE_INTERVAL=2000
+      - JWT_SECRET=${JWT_SECRET:-changeme}
+      # InfluxDB Configuration
+      - INFLUXDB_ENABLED=true
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN:-my-super-secret-token}
+      - INFLUXDB_ORG=enterprise
+      - INFLUXDB_BUCKET=dashboard
+      # Alert Configuration
+      - ALERT_EMAIL_ENABLED=${ALERT_EMAIL_ENABLED:-false}
+      - ALERT_SLACK_ENABLED=${ALERT_SLACK_ENABLED:-false}
+      - ALERT_DISCORD_ENABLED=${ALERT_DISCORD_ENABLED:-false}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - dashboard-logs:/app/logs
+    networks:
+      - dashboard-net
+    depends_on:
+      - influxdb
+
+  # InfluxDB für Langzeitspeicherung
+  influxdb:
+    image: influxdb:2.7
+    container_name: dashboard-influxdb
+    restart: unless-stopped
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USER:-admin}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD:-admin123}
+      - DOCKER_INFLUXDB_INIT_ORG=enterprise
+      - DOCKER_INFLUXDB_INIT_BUCKET=dashboard
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN:-my-super-secret-token}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    networks:
+      - dashboard-net
+    ports:
+      - "8086:8086"
+
+  # Grafana für Visualisierung
+  grafana:
+    image: grafana/grafana:latest
+    container_name: dashboard-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+      - GF_SERVER_ROOT_URL=${GRAFANA_URL:-http://localhost:3001}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - dashboard-net
+    ports:
+      - "3001:3000"
+    depends_on:
+      - influxdb
+
+networks:
+  dashboard-net:
+    driver: bridge
+
+volumes:
+  dashboard-logs:
+  influxdb-data:
+  grafana-data:
