@@ -5,6 +5,23 @@ Alle wichtigen Änderungen an diesem Projekt werden in dieser Datei dokumentiert
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
+## [2.3.0] - 2024-03-16
+
+### Added
+- ✨ InfluxDB Integration für Langzeitspeicherung
+- ✨ TimeSeries Datenbank Modul
+- ✨ Grafana Dashboard Integration
+- ✨ Historische Daten-API (/api/history/:metric)
+- ✨ Statistik-API (/api/stats/:metric)
+- ✨ Automatische Metriken-Speicherung in InfluxDB
+- ✨ Docker Compose für InfluxDB + Grafana Stack
+- ✨ Grafana Data Source Provisioning
+- ✨ Unterstützung für benutzerdefinierte Zeitbereiche
+
+### Changed
+- 🔧 Server modularisiert mit TimeSeries Support
+- 🔧 Verbesserte Datenpersistenz
+
 ## [2.2.0] - 2024-03-16
 
 ### Added

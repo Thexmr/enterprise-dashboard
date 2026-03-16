@@ -1,12 +1,19 @@
-# 🏢 Enterprise Dashboard v2.2
+# 🏢 Enterprise Dashboard v2.3
 
-Ein professionelles, Echtzeit-System-Monitoring Dashboard für Server und Docker-Umgebungen mit JWT-Authentifizierung und Multi-Channel Alerting.
+Ein professionelles, Echtzeit-System-Monitoring Dashboard für Server und Docker-Umgebungen mit JWT-Authentifizierung, Multi-Channel Alerting und TimeSeries-Datenbank.
 
-![Version](https://img.shields.io/badge/version-2.2.0-blue)
+![Version](https://img.shields.io/badge/version-2.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)
 
 ## 🚀 Features
+
+### 💾 TimeSeries Datenbank (InfluxDB)
+- **Langzeitspeicherung**: Alle Metriken werden persistent gespeichert
+- **Historische Analyse**: Abfrage von Daten über beliebige Zeiträume
+- **Statistiken**: Durchschnitt, Min, Max über Zeitperioden
+- **Grafana Integration**: Professionelle Visualisierung
+- **Automatische Aggregation**: Daten werden effizient gespeichert
 
 ### 🔔 Multi-Channel Alerting
 - **E-Mail**: SMTP mit HTML Templates
@@ -53,38 +60,48 @@ Ein professionelles, Echtzeit-System-Monitoring Dashboard für Server und Docker
 
 ## 📦 Installation
 
-### Option 1: Direkt (Node.js)
+### Option 1: Full Stack mit InfluxDB + Grafana (Empfohlen)
 
 ```bash
 # Repository klonen
 git clone https://github.com/Thexmr/enterprise-dashboard.git
 cd enterprise-dashboard
 
+# .env Datei erstellen
+cp .env.example .env
+# .env anpassen mit deinen Einstellungen
+
+# Full Stack starten (Dashboard + InfluxDB + Grafana)
+docker-compose -f docker-compose.influx.yml up -d
+
+# Services:
+# Dashboard: http://localhost:3000
+# Grafana:   http://localhost:3001
+# InfluxDB:  http://localhost:8086
+```
+
+### Option 2: Nur Dashboard (ohne Langzeitspeicherung)
+
+```bash
 # Dependencies installieren
 npm install
 
-# Server starten (mit Alerts)
-npm run start:alerts
+# Server starten
+npm start
 
-# Dashboard öffnen: http://localhost:3000
-# Login: admin / admin123
+# Dashboard: http://localhost:3000
 ```
 
-### Option 2: Docker
+### Option 3: Mit Authentifizierung und Alerts
 
 ```bash
-# Mit Docker Compose
-docker-compose up -d
+npm install
+
+# Mit Auth + Alerts
+npm run start:full
 
 # Dashboard: http://localhost:3000
 # Login: admin / admin123
-```
-
-### Option 3: Multi-Server Setup
-
-```bash
-# Starte Master + Agent
-docker-compose -f docker-compose.multi.yml up -d
 ```
 
 ## 🔧 Konfiguration
@@ -92,6 +109,7 @@ docker-compose -f docker-compose.multi.yml up -d
 Erstelle eine `.env` Datei:
 
 ```env
+# Server Configuration
 PORT=3000
 NODE_ENV=production
 UPDATE_INTERVAL=2000
@@ -101,6 +119,21 @@ JWT_SECRET=your-super-secret-key-change-this
 JWT_EXPIRES=24h
 REFRESH_TOKEN_EXPIRES=7d
 
+# InfluxDB Configuration
+INFLUXDB_ENABLED=true
+INFLUXDB_URL=http://localhost:8086
+INFLUXDB_TOKEN=my-super-secret-token
+INFLUXDB_ORG=enterprise
+INFLUXDB_BUCKET=dashboard
+
+# InfluxDB Init (für Docker)
+INFLUXDB_USER=admin
+INFLUXDB_PASSWORD=admin123
+
+# Grafana Configuration
+GRAFANA_USER=admin
+GRAFANA_PASSWORD=admin123
+
 # Alert Thresholds
 ALERT_CPU_THRESHOLD=80
 ALERT_MEMORY_THRESHOLD=85
@@ -109,27 +142,23 @@ ALERT_TEMP_THRESHOLD=75
 ALERT_COOLDOWN=300000
 
 # Email Configuration
-ALERT_EMAIL_ENABLED=true
+ALERT_EMAIL_ENABLED=false
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 ALERT_FROM_EMAIL=dashboard@yourdomain.com
-ALERT_EMAIL_TO=admin@yourdomain.com,ops@yourdomain.com
+ALERT_EMAIL_TO=admin@yourdomain.com
 
 # Slack Configuration
-ALERT_SLACK_ENABLED=true
+ALERT_SLACK_ENABLED=false
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 
 # Discord Configuration
-ALERT_DISCORD_ENABLED=true
+ALERT_DISCORD_ENABLED=false
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR/WEBHOOK
 
-# Generic Webhook
-ALERT_WEBHOOK_ENABLED=true
-WEBHOOK_URL=https://your-custom-webhook.com/alerts
-
-# Default Admin (change in production!)
+# Default Admin
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 ```
@@ -147,48 +176,49 @@ ADMIN_PASSWORD=admin123
 | Methode | Endpunkt | Beschreibung | Rolle |
 |---------|----------|--------------|-------|
 | GET | `/api/metrics` | Aktuelle Metriken | viewer+ |
-| GET | `/api/history` | Historische Daten | viewer+ |
+| GET | `/api/history` | Historische Daten (Memory) | viewer+ |
+| GET | `/api/history/:metric` | Historische Daten (InfluxDB) | viewer+ |
+| GET | `/api/stats/:metric` | Statistiken (InfluxDB) | viewer+ |
 | GET | `/api/alerts` | Aktive Alerts | viewer+ |
 | POST | `/api/alerts/:id/acknowledge` | Alert bestätigen | operator+ |
 | GET | `/api/users` | Benutzerliste | admin |
 | POST | `/api/users` | Benutzer erstellen | admin |
-| POST | `/api/auth/logout` | Abmelden | alle |
 
 ### WebSocket
 ```
 ws://localhost:3000?token=YOUR_JWT_TOKEN
 ```
 
-## 🔔 Alert Konfiguration
+## 💾 InfluxDB & Grafana
 
-### Alert Thresholds
-- **CPU**: Standard 80% (kritisch bei 90%)
-- **Memory**: Standard 85% (kritisch bei 90%)
-- **Disk**: Standard 90% (kritisch bei 95%)
-- **Temperature**: Standard 75°C
+### Zeitbereiche für Historische Daten
+- `1h` - Letzte Stunde
+- `6h` - Letzte 6 Stunden
+- `24h` - Letzte 24 Stunden
+- `7d` - Letzte 7 Tage
+- `30d` - Letzte 30 Tage
 
-### Alert Cooldown
-- Standard: 5 Minuten zwischen gleichen Alerts
-- Verhindert Spam-Benachrichtigungen
-- Konfigurierbar via `ALERT_COOLDOWN`
+### Beispiel API-Abfragen
+```bash
+# CPU Daten der letzten 24 Stunden
+curl -H "Authorization: Bearer TOKEN" \
+  http://localhost:3000/api/history/cpu?range=24h&host=server1
 
-### Alert Severity
-- **Critical**: Sofortige Benachrichtigung (rot)
-- **Warning**: Wichtige Hinweise (gelb)
-- **Info**: Informationen (blau)
+# Memory Statistiken
+curl -H "Authorization: Bearer TOKEN" \
+  http://localhost:3000/api/stats/memory?range=7d&host=server1
+```
 
-## 👥 Rollen & Berechtigungen
+### Grafana Dashboards
+- Automatisch provisioniert bei Docker-Start
+- URL: http://localhost:3001
+- Login: admin / (GRAFANA_PASSWORD aus .env)
 
-| Rolle | Berechtigungen |
-|-------|---------------|
-| **admin** | Vollzugriff: Lesen, Schreiben, Benutzerverwaltung, Alerts bestätigen |
-| **operator** | Lesen, Schreiben, Services neustarten, Alerts bestätigen |
-| **viewer** | Nur Lesen |
+## 🐳 Docker Compose Stacks
 
-## 🐳 Docker Compose Stack
-
-### Standard (Single Server)
+### Full Stack (Empfohlen)
 ```yaml
+# docker-compose.influx.yml
 version: '3.8'
 
 services:
@@ -197,31 +227,29 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - JWT_SECRET=your-secret-key
-      - ALERT_EMAIL_ENABLED=true
-      - SMTP_HOST=smtp.gmail.com
+      - INFLUXDB_ENABLED=true
+      - INFLUXDB_URL=http://influxdb:8086
+    depends_on:
+      - influxdb
+
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - influxdb-data:/var/lib/influxdb2
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
 ```
 
-### Multi-Server
-```yaml
-version: '3.8'
-
-services:
-  dashboard-master:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - MODE=master
-      - JWT_SECRET=your-secret-key
-
-  agent-server-1:
-    build: .
-    environment:
-      - DASHBOARD_SERVER=ws://dashboard-master:3000
-      - SERVER_ID=server-1
+Starten:
+```bash
+docker-compose -f docker-compose.influx.yml up -d
 ```
 
 ## 🔐 Sicherheit
@@ -249,35 +277,30 @@ Siehe [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## 📝 Changelog
 
+### v2.3.0 (2024-03-16)
+- ✨ InfluxDB Integration für Langzeitspeicherung
+- ✨ TimeSeries Datenbank Modul
+- ✨ Grafana Dashboard Integration
+- ✨ Historische Daten-API
+- ✨ Statistik-API
+
 ### v2.2.0 (2024-03-16)
 - ✨ Multi-Channel Alerting (Email, Slack, Discord, Webhook)
 - ✨ Alert Cooldown System
 - ✨ Alert Acknowledgement
-- ✨ HTML Email Templates
-- ✨ Rich Embeds für Slack/Discord
 
 ### v2.1.0 (2024-03-16)
 - ✨ JWT Authentication
 - ✨ Role-Based Access Control (RBAC)
-- ✨ Login Page
-- ✨ Rate Limiting
 - ✨ Multi-Server Agent
-- ✨ Token Refresh
-- ✨ User Management API
 
 ### v2.0.0 (2024-03-16)
 - ✨ Dark/Light Mode
-- ✨ Live Charts für CPU & Memory
+- ✨ Live Charts
 - ✨ Docker-Integration
-- ✨ Alert System
-- ✨ WebSocket Echtzeit-Updates
-- ✨ Docker Compose Stack
-- ✨ Responsive Design
 
 ### v1.0.0 (2024-03-16)
 - 🎉 Initiale Version
-- 📊 Basis Dashboard
-- 📈 Statische Demo
 
 ## 📄 Lizenz
 
