@@ -3,481 +3,807 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏢 Enterprise Dashboard</title>
+    <title>Enterprise Dashboard v2.0 - Live</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f1f5f9;
+            --bg-tertiary: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border: #cbd5e1;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: #fff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 20px;
+            line-height: 1.6;
         }
-        
+
+        /* Header */
         .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
             backdrop-filter: blur(10px);
         }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .header p {
-            opacity: 0.8;
-            font-size: 1.1em;
-        }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
+
+        .header-content {
             max-width: 1600px;
             margin: 0 auto;
-        }
-        
-        .module {
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-        }
-        
-        .module:hover {
-            transform: translateY(-5px);
-        }
-        
-        .module-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
-        }
-        
-        .module-icon {
-            font-size: 1.5em;
-            margin-right: 10px;
-        }
-        
-        .module h2 {
-            font-size: 1.3em;
-            font-weight: 600;
-        }
-        
-        .metric {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        
-        .metric:last-child {
-            border-bottom: none;
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
         }
-        
-        .metric-label {
-            opacity: 0.8;
-            font-size: 0.9em;
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
         }
-        
-        .metric-value {
-            font-weight: bold;
-            font-size: 1.1em;
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
         }
-        
-        .progress-bar {
-            width: 100%;
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .btn.active {
+            background: var(--accent-blue);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
             height: 8px;
-            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            background: var(--accent-red);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: var(--accent-green);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .card-icon.cpu { background: rgba(239, 68, 68, 0.2); }
+        .card-icon.memory { background: rgba(59, 130, 246, 0.2); }
+        .card-icon.disk { background: rgba(245, 158, 11, 0.2); }
+        .card-icon.network { background: rgba(16, 185, 129, 0.2); }
+        .card-icon.docker { background: rgba(139, 92, 246, 0.2); }
+        .card-icon.process { background: rgba(236, 72, 153, 0.2); }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Progress Bars */
+        .progress-container {
+            margin-top: 1rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
             border-radius: 4px;
             overflow: hidden;
-            margin-top: 5px;
         }
-        
+
         .progress-fill {
             height: 100%;
             border-radius: 4px;
-            transition: width 0.5s ease;
+            transition: width 0.5s ease, background-color 0.3s;
         }
-        
-        .progress-fill.cpu { background: linear-gradient(90deg, #ff6b6b, #ee5a5a); }
-        .progress-fill.memory { background: linear-gradient(90deg, #4ecdc4, #44a08d); }
-        .progress-fill.disk { background: linear-gradient(90deg, #ffe66d, #f4d03f); }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 8px;
+
+        .progress-fill.low { background: var(--accent-green); }
+        .progress-fill.medium { background: var(--accent-yellow); }
+        .progress-fill.high { background: var(--accent-red); }
+
+        /* Charts */
+        .chart-container {
+            height: 150px;
+            margin-top: 1rem;
+            position: relative;
         }
-        
-        .status-running { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-        .status-stopped { background: #e74c3c; }
-        .status-warning { background: #f39c12; }
-        
-        .log-container {
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            padding: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85em;
+
+        .chart-svg {
+            width: 100%;
+            height: 100%;
         }
-        
-        .log-entry {
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .log-entry.error { color: #ff6b6b; }
-        .log-entry.warning { color: #ffe66d; }
-        .log-entry.info { color: #4ecdc4; }
-        
-        .process-list {
+
+        /* Lists */
+        .list {
             max-height: 250px;
             overflow-y: auto;
         }
-        
-        .process-item {
-            display: grid;
-            grid-template-columns: 60px 60px 1fr;
-            gap: 10px;
-            padding: 8px;
-            background: rgba(255,255,255,0.05);
-            margin-bottom: 5px;
-            border-radius: 5px;
-            font-size: 0.85em;
-        }
-        
-        .process-cpu { color: #ff6b6b; font-weight: bold; }
-        .process-mem { color: #4ecdc4; font-weight: bold; }
-        .process-name { 
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis;
-            opacity: 0.9;
-        }
-        
-        .network-connections {
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8em;
-            background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 5px;
-        }
-        
-        .connection-line {
-            padding: 2px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .refresh-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(46, 204, 113, 0.9);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 0.9em;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        .docker-container {
+
+        .list-item {
             display: flex;
             align-items: center;
-            padding: 8px;
-            background: rgba(255,255,255,0.05);
-            margin-bottom: 5px;
-            border-radius: 5px;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
         }
-        
-        .docker-name {
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item:hover {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+        }
+
+        .item-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+        }
+
+        .item-status.running { background: var(--accent-green); }
+        .item-status.stopped { background: var(--accent-red); }
+        .item-status.warning { background: var(--accent-yellow); }
+
+        .item-info {
             flex: 1;
+        }
+
+        .item-name {
             font-weight: 500;
         }
-        
-        .docker-status {
-            font-size: 0.8em;
-            opacity: 0.8;
+
+        .item-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
         }
-        
+
+        .item-value {
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        /* Alerts */
+        .alerts-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .alert {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--accent-yellow);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert.critical {
+            border-left-color: var(--accent-red);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
             .dashboard-grid {
                 grid-template-columns: 1fr;
             }
-            .header h1 {
-                font-size: 1.8em;
+
+            .container {
+                padding: 1rem;
             }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* System Info */
+        .system-info {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .info-value {
+            font-weight: 600;
+            margin-top: 0.25rem;
         }
     </style>
 </head>
 <body>
-    <div class="refresh-indicator">
-        🟢 Live • Aktualisiert alle 2s
-    </div>
-    
-    <div class="header">
-        <h1>🏢 Enterprise Dashboard</h1>
-        <p>System-Überwachung in Echtzeit • Vollständige Transparenz</p>
-    </div>
-    
-    <div class="dashboard-grid">
-        <!-- Modul 1: System-Monitor -->
-        <div class="module">
-            <div class="module-header">
-                <span class="module-icon">💻</span>
-                <h2>System-Monitor</h2>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                <span>Enterprise Dashboard</span>
             </div>
-            
-            <div class="metric">
-                <span class="metric-label">CPU-Auslastung</span>
-                <span class="metric-value" id="cpu-value">--%</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill cpu" id="cpu-bar" style="width: 0%"></div>
-            </div>
-            
-            <div class="metric" style="margin-top: 15px;">
-                <span class="metric-label">RAM-Nutzung</span>
-                <span class="metric-value" id="mem-value">-- / -- MB</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill memory" id="mem-bar" style="width: 0%"></div>
-            </div>
-            
-            <div id="disk-info" style="margin-top: 15px;">
-                <div class="metric">
-                    <span class="metric-label">Disk-Info wird geladen...</span>
+            <div class="header-actions">
+                <div class="connection-status">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-text">Verbinden...</span>
                 </div>
+                <button class="btn" onclick="toggleTheme()">
+                    🌓 Theme
+                </button>
+                <button class="btn" onclick="toggleAutoRefresh()" id="refresh-btn">
+                    ⏸️ Pause
+                </button>
             </div>
-            
-            <div style="margin-top: 15px;">
-                <div class="metric">
-                    <span class="metric-label">Netzwerk (↓/↑)</span>
-                    <span class="metric-value" id="network-value">-- / -- KB/s</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <!-- CPU Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon cpu">💻</div>
+                        CPU-Auslastung
+                    </div>
+                    <span class="card-value" id="cpu-value">--%</span>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Modul 2: Prozess-Manager -->
-        <div class="module">
-            <div class="module-header">
-                <span class="module-icon">⚙️</span>
-                <h2>Top-Prozesse (nach CPU)</h2>
-            </div>
-            <div class="process-list" id="process-list">
-                <div class="metric">Lade Prozesse...</div>
-            </div>
-        </div>
-        
-        <!-- Modul 3: Docker-Übersicht -->
-        <div class="module">
-            <div class="module-header">
-                <span class="module-icon">🐳</span>
-                <h2>Docker-Container</h2>
-            </div>
-            <div id="docker-list">
-                <div class="metric">Lade Container...</div>
-            </div>
-        </div>
-        
-        <!-- Modul 4: Netzwerk-Dashboard -->
-        <div class="module">
-            <div class="module-header">
-                <span class="module-icon">🌐</span>
-                <h2>Netzwerk-Verbindungen</h2>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Aktive Verbindungen (Ports)</span>
-            </div>
-            <div class="network-connections" id="network-connections">
-                Lade Verbindungen...
-            </div>
-        </div>
-        
-        <!-- Modul 5: Echtzeit-Logs -->
-        <div class="module" style="grid-column: span 2;">
-            <div class="module-header">
-                <span class="module-icon">📜</span>
-                <h2>System-Logs (Letzte 50 Zeilen)</h2>
-            </div>
-            <div class="log-container" id="log-container">
-                Lade Logs...
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        // WebSocket-Verbindung für Echtzeit-Updates
-        const ws = new WebSocket(`ws://${window.location.host}`);
-        
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'system') {
-                updateSystemRealtime(data.data);
-            }
-        };
-        
-        function updateSystemRealtime(data) {
-            // CPU
-            document.getElementById('cpu-value').textContent = data.cpu + '%';
-            document.getElementById('cpu-bar').style.width = data.cpu + '%';
-            
-            // Memory
-            document.getElementById('mem-value').textContent = 
-                `${data.memory.used} / ${data.memory.total} MB (${data.memory.percentage}%)`;
-            document.getElementById('mem-bar').style.width = data.memory.percentage + '%';
-            
-            // Network
-            const rx = (data.network[0]?.rx_sec / 1024).toFixed(1) || 0;
-            const tx = (data.network[0]?.tx_sec / 1024).toFixed(1) || 0;
-            document.getElementById('network-value').textContent = `${rx} / ${tx} KB/s`;
-        }
-        
-        // API-Daten laden
-        async function loadSystemData() {
-            try {
-                const response = await fetch('/api/system');
-                const data = await response.json();
-                
-                // Disk-Info
-                const diskHtml = data.disk.map(d => `
-                    <div class="metric">
-                        <span class="metric-label">${d.fs}</span>
-                        <span class="metric-value">${d.used} / ${d.size} GB (${d.use}%)</span>
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <span>Gesamtauslastung</span>
+                        <span id="cpu-cores">-- Kerne</span>
                     </div>
                     <div class="progress-bar">
-                        <div class="progress-fill disk" style="width: ${d.use}%"></div>
+                        <div class="progress-fill" id="cpu-bar"></div>
                     </div>
-                `).join('');
-                document.getElementById('disk-info').innerHTML = diskHtml;
-            } catch (error) {
-                console.error('System data error:', error);
-            }
-        }
-        
-        async function loadProcesses() {
-            try {
-                const response = await fetch('/api/processes');
-                const data = await response.json();
-                
-                const html = data.processes.map(p => `
-                    <div class="process-item">
-                        <span class="process-cpu">${p.cpu}%</span>
-                        <span class="process-mem">${p.mem}%</span>
-                        <span class="process-name" title="${p.command}">${p.command}</span>
+                </div>
+                <div class="chart-container">
+                    <svg class="chart-svg" id="cpu-chart"></svg>
+                </div>
+            </div>
+
+            <!-- Memory Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon memory">🧠</div>
+                        Arbeitsspeicher
                     </div>
-                `).join('');
-                document.getElementById('process-list').innerHTML = html;
-            } catch (error) {
-                console.error('Process data error:', error);
-            }
+                    <span class="card-value" id="mem-value">--</span>
+                </div>
+                <div class="card-subtitle" id="mem-detail">-- / -- GB</div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="mem-bar"></div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <svg class="chart-svg" id="mem-chart"></svg>
+                </div>
+            </div>
+
+            <!-- Disk Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon disk">💾</div>
+                        Festplatten
+                    </div>
+                </div>
+                <div id="disk-list">
+                    <!-- Dynamisch gefüllt -->
+                </div>
+            </div>
+
+            <!-- Network Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon network">🌐</div>
+                        Netzwerk
+                    </div>
+                </div>
+                <div id="network-list">
+                    <!-- Dynamisch gefüllt -->
+                </div>
+            </div>
+
+            <!-- Docker Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon docker">🐳</div>
+                        Docker Container
+                    </div>
+                    <span class="card-value" id="docker-count">--</span>
+                </div>
+                <div class="list" id="docker-list">
+                    <!-- Dynamisch gefüllt -->
+                </div>
+            </div>
+
+            <!-- Processes Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon process">⚙️</div>
+                        Top-Prozesse
+                    </div>
+                </div>
+                <div class="list" id="process-list">
+                    <!-- Dynamisch gefüllt -->
+                </div>
+            </div>
+        </div>
+
+        <!-- System Info Footer -->
+        <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-title">
+                <div class="card-icon">ℹ️</div>
+                System-Informationen
+            </div>
+            <div class="system-info" id="system-info">
+                <!-- Dynamisch gefüllt -->
+            </div>
+        </div>
+    </div>
+
+    <div class="alerts-container" id="alerts"></div>
+
+    <script>
+        // State
+        let ws = null;
+        let autoRefresh = true;
+        let history = [];
+        let maxHistory = 50;
+
+        // Theme
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+            localStorage.setItem('theme', html.getAttribute('data-theme'));
         }
-        
-        async function loadDocker() {
-            try {
-                const response = await fetch('/api/docker');
-                const data = await response.json();
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Auto Refresh
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            document.getElementById('refresh-btn').textContent = autoRefresh ? '⏸️ Pause' : '▶️ Fortsetzen';
+        }
+
+        // WebSocket Connection
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}`);
+
+            ws.onopen = () => {
+                updateStatus(true);
+            };
+
+            ws.onmessage = (event) => {
+                if (!autoRefresh) return;
                 
-                if (data.error) {
-                    document.getElementById('docker-list').innerHTML = `
-                        <div class="metric">
-                            <span class="status-indicator status-warning"></span>
-                            Docker nicht verfügbar
-                        </div>`;
-                    return;
+                const message = JSON.parse(event.data);
+                if (message.type === 'update' || message.type === 'init') {
+                    updateDashboard(message.data);
+                    addToHistory(message.data);
                 }
-                
-                const html = data.containers.map(c => {
-                    const isRunning = c.status.includes('Up');
-                    return `
-                        <div class="docker-container">
-                            <span class="status-indicator ${isRunning ? 'status-running' : 'status-stopped'}"></span>
-                            <span class="docker-name">${c.name}</span>
-                            <span class="docker-status">${c.status}</span>
-                        </div>
-                    `;
-                }).join('');
-                document.getElementById('docker-list').innerHTML = html || '<div class="metric">Keine Container gefunden</div>';
-            } catch (error) {
-                document.getElementById('docker-list').innerHTML = `
-                    <div class="metric">
-                        <span class="status-indicator status-stopped"></span>
-                        Docker-Fehler: ${error.message}
-                    </div>`;
+            };
+
+            ws.onclose = () => {
+                updateStatus(false);
+                setTimeout(connect, 3000);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus(false);
+            };
+        }
+
+        function updateStatus(connected) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            
+            if (connected) {
+                dot.classList.add('connected');
+                text.textContent = 'Verbunden';
+            } else {
+                dot.classList.remove('connected');
+                text.textContent = 'Getrennt';
             }
         }
-        
-        async function loadNetwork() {
-            try {
-                const response = await fetch('/api/network');
-                const data = await response.json();
-                
-                const html = data.connections.map(c => `
-                    <div class="connection-line">${c}</div>
-                `).join('');
-                document.getElementById('network-connections').innerHTML = html;
-            } catch (error) {
-                console.error('Network data error:', error);
+
+        // Update Dashboard
+        function updateDashboard(data) {
+            // CPU
+            const cpu = data.system.cpu;
+            document.getElementById('cpu-value').textContent = `${cpu.usage}%`;
+            document.getElementById('cpu-cores').textContent = `${cpu.cores.length} Kerne`;
+            const cpuBar = document.getElementById('cpu-bar');
+            cpuBar.style.width = `${cpu.usage}%`;
+            cpuBar.className = 'progress-fill ' + getLevel(cpu.usage);
+
+            // Memory
+            const mem = data.system.memory;
+            document.getElementById('mem-value').textContent = `${mem.percentage}%`;
+            document.getElementById('mem-detail').textContent = `${mem.used} / ${mem.total} GB`;
+            const memBar = document.getElementById('mem-bar');
+            memBar.style.width = `${mem.percentage}%`;
+            memBar.className = 'progress-fill ' + getLevel(mem.percentage);
+
+            // Disk
+            updateDiskList(data.system.disk);
+
+            // Network
+            updateNetworkList(data.system.network);
+
+            // Docker
+            document.getElementById('docker-count').textContent = data.docker.length;
+            updateDockerList(data.docker);
+
+            // Processes
+            updateProcessList(data.processes);
+
+            // System Info
+            updateSystemInfo(data.info);
+
+            // Update Charts
+            updateCharts();
+        }
+
+        function getLevel(value) {
+            if (value < 50) return 'low';
+            if (value < 80) return 'medium';
+            return 'high';
+        }
+
+        function updateDiskList(disks) {
+            const container = document.getElementById('disk-list');
+            container.innerHTML = disks.map(d => `
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <span>${d.fs}</span>
+                        <span>${d.used} / ${d.size} GB (${d.percentage}%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${getLevel(d.percentage)}" style="width: ${d.percentage}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateNetworkList(networks) {
+            const container = document.getElementById('network-list');
+            container.innerHTML = networks.map(n => `
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-name">${n.iface}</div>
+                        <div class="item-meta">Gesamt: ↓${n.rx} MB ↑${n.tx} MB</div>
+                    </div>
+                    <div class="item-value">
+                        ↓${n.rx_sec} KB/s ↑${n.tx_sec} KB/s
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateDockerList(containers) {
+            const container = document.getElementById('docker-list');
+            container.innerHTML = containers.map(c => `
+                <div class="list-item">
+                    <span class="item-status ${c.status}"></span>
+                    <div class="item-info">
+                        <div class="item-name">${c.name}</div>
+                        <div class="item-meta">${c.image} | CPU: ${c.cpu}% | MEM: ${c.mem}%</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateProcessList(processes) {
+            const container = document.getElementById('process-list');
+            container.innerHTML = processes.map(p => `
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-name">${p.name}</div>
+                        <div class="item-meta">PID: ${p.pid}</div>
+                    </div>
+                    <div class="item-value" style="color: var(--accent-${p.cpu > 50 ? 'red' : 'green'})">
+                        ${p.cpu}% CPU | ${p.mem}% MEM
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateSystemInfo(info) {
+            const container = document.getElementById('system-info');
+            const uptime = Math.floor(info.uptime / 3600);
+            container.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Hostname</span>
+                    <span class="info-value">${info.hostname}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Betriebssystem</span>
+                    <span class="info-value">${info.distro} ${info.release}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Architektur</span>
+                    <span class="info-value">${info.arch}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Uptime</span>
+                    <span class="info-value">${uptime} Stunden</span>
+                </div>
+            `;
+        }
+
+        // History for Charts
+        function addToHistory(data) {
+            history.push({
+                timestamp: data.timestamp,
+                cpu: data.system.cpu.usage,
+                memory: data.system.memory.percentage
+            });
+            
+            if (history.length > maxHistory) {
+                history.shift();
             }
         }
-        
-        async function loadLogs() {
-            try {
-                const response = await fetch('/api/logs');
-                const data = await response.json();
-                
-                const html = data.logs.map(log => {
-                    let className = 'log-entry';
-                    if (log.includes('ERROR') || log.includes('error')) className += ' error';
-                    else if (log.includes('WARN')) className += ' warning';
-                    else if (log.includes('INFO')) className += ' info';
-                    return `<div class="${className}">${log}</div>`;
-                }).join('');
-                document.getElementById('log-container').innerHTML = html;
-            } catch (error) {
-                console.error('Logs error:', error);
-            }
+
+        // Simple Line Chart
+        function drawChart(svgId, data, color) {
+            const svg = document.getElementById(svgId);
+            if (!svg || data.length < 2) return;
+
+            const width = svg.clientWidth || 300;
+            const height = svg.clientHeight || 150;
+            const padding = 5;
+
+            const max = Math.max(...data.map(d => d.value), 100);
+            const min = 0;
+
+            const points = data.map((d, i) => {
+                const x = (i / (data.length - 1)) * (width - padding * 2) + padding;
+                const y = height - ((d.value - min) / (max - min)) * (height - padding * 2) - padding;
+                return `${x},${y}`;
+            }).join(' ');
+
+            svg.innerHTML = `
+                <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+                    <polyline
+                        fill="none"
+                        stroke="${color}"
+                        stroke-width="2"
+                        points="${points}"
+                    />
+                    <circle cx="${width - padding}" cy="${height - ((data[data.length - 1].value - min) / (max - min)) * (height - padding * 2) - padding}" r="4" fill="${color}"/>
+                </svg>
+            `;
         }
-        
-        // Initiales Laden
-        loadSystemData();
-        loadProcesses();
-        loadDocker();
-        loadNetwork();
-        loadLogs();
-        
-        // Periodisches Aktualisieren
-        setInterval(loadProcesses, 5000);
-        setInterval(loadDocker, 10000);
-        setInterval(loadNetwork, 10000);
-        setInterval(loadLogs, 10000);
+
+        function updateCharts() {
+            const cpuData = history.map(h => ({ value: h.cpu }));
+            const memData = history.map(h => ({ value: h.memory }));
+
+            drawChart('cpu-chart', cpuData, '#3b82f6');
+            drawChart('mem-chart', memData, '#10b981');
+        }
+
+        // Show Alert
+        function showAlert(message, type = 'warning') {
+            const container = document.getElementById('alerts');
+            const alert = document.createElement('div');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // Initialize
+        connect();
+
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                autoRefresh = false;
+            } else {
+                autoRefresh = true;
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,151 +1,296 @@
+/**
+ * Enterprise Dashboard v2.0 - Live Server
+ * Real-time system monitoring with WebSocket
+ */
+
 const express = require('express');
-const WebSocket = require('ws');
 const http = require('http');
-const osUtils = require('node-os-utils');
+const WebSocket = require('ws');
 const si = require('systeminformation');
-const { exec } = require('child_process');
-const util = require('util');
-const execPromise = util.promisify(exec);
+const cors = require('cors');
+const compression = require('compression');
+const helmet = require('helmet');
+const cron = require('node-cron');
+const winston = require('winston');
+require('dotenv').config();
+
+// Logger Setup
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+    new winston.transports.Console()
+  ]
+});
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Statische Dateien
+// Middleware
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
+app.use(cors());
+app.use(compression());
+app.use(express.json());
 app.use(express.static('public'));
 
-// API Endpunkte
-app.get('/api/system', async (req, res) => {
+// State
+const clients = new Set();
+const metrics = {
+  history: [],
+  alerts: [],
+  maxHistory: 100
+};
+
+// Alert Thresholds
+const THRESHOLDS = {
+  cpu: 80,
+  memory: 85,
+  disk: 90,
+  temperature: 75
+};
+
+/**
+ * Collect System Metrics
+ */
+async function collectMetrics() {
   try {
-    const cpu = await osUtils.cpu.usage();
-    const mem = await osUtils.mem.used();
-    const drive = await si.fsSize();
-    const network = await si.networkStats();
+    const [
+      cpu,
+      mem,
+      disk,
+      network,
+      processes,
+      docker,
+      system,
+      temperature
+    ] = await Promise.all([
+      si.currentLoad(),
+      si.mem(),
+      si.fsSize(),
+      si.networkStats(),
+      si.processes(),
+      si.dockerContainers().catch(() => []),
+      si.system(),
+      si.cpuTemperature().catch(() => ({ main: 0 }))
+    ]);
+
+    const timestamp = Date.now();
     
-    res.json({
-      cpu: { usage: cpu },
-      memory: {
-        used: Math.round(mem.used / 1024 / 1024),
-        total: Math.round(mem.total / 1024 / 1024),
-        percentage: Math.round((mem.used / mem.total) * 100)
+    const data = {
+      timestamp,
+      system: {
+        cpu: {
+          usage: Math.round(cpu.currentLoad),
+          cores: cpu.cpus.map(c => Math.round(c.load)),
+          temperature: temperature.main || 0
+        },
+        memory: {
+          used: Math.round(mem.used / 1024 / 1024 / 1024 * 100) / 100,
+          total: Math.round(mem.total / 1024 / 1024 / 1024 * 100) / 100,
+          percentage: Math.round(mem.used / mem.total * 100)
+        },
+        disk: disk.map(d => ({
+          fs: d.fs,
+          used: Math.round(d.used / 1024 / 1024 / 1024),
+          size: Math.round(d.size / 1024 / 1024 / 1024),
+          percentage: Math.round(d.use)
+        })),
+        network: network.map(n => ({
+          iface: n.iface,
+          rx: Math.round(n.rx_bytes / 1024 / 1024 * 100) / 100,
+          tx: Math.round(n.tx_bytes / 1024 / 1024 * 100) / 100,
+          rx_sec: Math.round(n.rx_sec / 1024 * 100) / 100,
+          tx_sec: Math.round(n.tx_sec / 1024 * 100) / 100
+        }))
       },
-      disk: drive.map(d => ({
-        fs: d.fs,
-        size: Math.round(d.size / 1024 / 1024 / 1024),
-        used: Math.round(d.used / 1024 / 1024 / 1024),
-        available: Math.round(d.available / 1024 / 1024 / 1024),
-        use: d.use
+      processes: processes.list
+        .sort((a, b) => b.cpu - a.cpu)
+        .slice(0, 10)
+        .map(p => ({
+          pid: p.pid,
+          name: p.name,
+          cpu: Math.round(p.cpu * 100) / 100,
+          mem: Math.round(p.mem * 100) / 100,
+          command: p.command
+        })),
+      docker: docker.map(c => ({
+        id: c.id,
+        name: c.name,
+        image: c.image,
+        status: c.state,
+        uptime: c.started,
+        cpu: c.cpuPercent,
+        mem: c.memPercent
       })),
-      network: network.map(n => ({
-        iface: n.iface,
-        rx_bytes: n.rx_bytes,
-        tx_bytes: n.tx_bytes,
-        rx_sec: n.rx_sec,
-        tx_sec: n.tx_sec
-      }))
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+      info: {
+        hostname: system.hostname,
+        platform: system.platform,
+        distro: system.distro,
+        release: system.release,
+        arch: system.arch,
+        uptime: system.uptime
+      }
+    };
 
-app.get('/api/processes', async (req, res) => {
-  try {
-    const { stdout } = await execPromise("ps aux --sort=-%cpu | head -20 | awk '{print $1, $2, $3, $4, $11}'");
-    const lines = stdout.trim().split('\n').slice(1);
-    const processes = lines.map(line => {
-      const parts = line.split(' ').filter(p => p);
-      return {
-        user: parts[0],
-        pid: parts[1],
-        cpu: parts[2],
-        mem: parts[3],
-        command: parts.slice(4).join(' ')
-      };
-    });
-    res.json({ processes });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+    // Check Alerts
+    checkAlerts(data);
 
-app.get('/api/docker', async (req, res) => {
-  try {
-    const { stdout } = await execPromise('docker ps -a --format "{{.Names}}|{{.Status}}|{{.Image}}" 2>/dev/null || echo "Docker not available"');
-    if (stdout.includes('Docker not available')) {
-      return res.json({ containers: [], error: 'Docker not available' });
+    // Store History
+    metrics.history.push(data);
+    if (metrics.history.length > metrics.maxHistory) {
+      metrics.history.shift();
     }
-    const lines = stdout.trim().split('\n').filter(l => l);
-    const containers = lines.map(line => {
-      const [name, status, image] = line.split('|');
-      return { name, status, image };
+
+    return data;
+  } catch (error) {
+    logger.error('Error collecting metrics:', error);
+    return null;
+  }
+}
+
+/**
+ * Check Alert Conditions
+ */
+function checkAlerts(data) {
+  const newAlerts = [];
+
+  if (data.system.cpu.usage > THRESHOLDS.cpu) {
+    newAlerts.push({
+      type: 'warning',
+      message: `CPU usage high: ${data.system.cpu.usage}%`,
+      timestamp: Date.now()
     });
-    res.json({ containers });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
 
-app.get('/api/network', async (req, res) => {
-  try {
-    const { stdout: connections } = await execPromise("ss -tuln | tail -n +2 | head -30");
-    const { stdout: interfaces } = await execPromise("ip addr show | grep -E '^[0-9]|inet ' | head -20");
-    
-    res.json({
-      connections: connections.split('\n').filter(l => l.trim()),
-      interfaces: interfaces.split('\n').filter(l => l.trim())
+  if (data.system.memory.percentage > THRESHOLDS.memory) {
+    newAlerts.push({
+      type: 'warning',
+      message: `Memory usage high: ${data.system.memory.percentage}%`,
+      timestamp: Date.now()
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
-});
 
-app.get('/api/logs', async (req, res) => {
-  try {
-    const { stdout } = await execPromise("journalctl -n 50 --no-pager 2>/dev/null || tail -n 50 /var/log/syslog 2>/dev/null || echo 'Logs not available'");
-    res.json({ logs: stdout.split('\n').filter(l => l) });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// WebSocket für Echtzeit-Updates
-wss.on('connection', (ws) => {
-  console.log('Client connected');
-  
-  const interval = setInterval(async () => {
-    try {
-      const cpu = await osUtils.cpu.usage();
-      const mem = await osUtils.mem.used();
-      const network = await si.networkStats();
-      
-      ws.send(JSON.stringify({
-        type: 'system',
-        data: {
-          cpu: cpu,
-          memory: {
-            percentage: Math.round((mem.used / mem.total) * 100),
-            used: Math.round(mem.used / 1024 / 1024),
-            total: Math.round(mem.total / 1024 / 1024)
-          },
-          network: network.map(n => ({
-            rx_sec: n.rx_sec,
-            tx_sec: n.tx_sec
-          }))
-        }
-      }));
-    } catch (error) {
-      console.error('WebSocket error:', error);
+  data.system.disk.forEach(d => {
+    if (d.percentage > THRESHOLDS.disk) {
+      newAlerts.push({
+        type: 'critical',
+        message: `Disk space low on ${d.fs}: ${d.percentage}%`,
+        timestamp: Date.now()
+      });
     }
-  }, 2000);
-  
+  });
+
+  if (newAlerts.length > 0) {
+    metrics.alerts.push(...newAlerts);
+    logger.warn('Alerts triggered:', newAlerts);
+  }
+}
+
+/**
+ * Broadcast to all clients
+ */
+function broadcast(data) {
+  const message = JSON.stringify(data);
+  clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
+// WebSocket Connection Handling
+wss.on('connection', (ws, req) => {
+  const ip = req.socket.remoteAddress;
+  logger.info(`Client connected from ${ip}`);
+  clients.add(ws);
+
+  // Send initial data
+  if (metrics.history.length > 0) {
+    ws.send(JSON.stringify({
+      type: 'init',
+      data: metrics.history[metrics.history.length - 1],
+      history: metrics.history
+    }));
+  }
+
   ws.on('close', () => {
-    clearInterval(interval);
-    console.log('Client disconnected');
+    logger.info(`Client disconnected from ${ip}`);
+    clients.delete(ws);
+  });
+
+  ws.on('error', (error) => {
+    logger.error('WebSocket error:', error);
+    clients.delete(ws);
   });
 });
 
-const PORT = process.env.PORT || 8080;
-server.listen(PORT, () => {
-  console.log(`🚀 Enterprise Dashboard running on port ${PORT}`);
+// API Routes
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
 });
+
+app.get('/api/metrics', async (req, res) => {
+  const data = await collectMetrics();
+  res.json(data);
+});
+
+app.get('/api/history', (req, res) => {
+  res.json(metrics.history);
+});
+
+app.get('/api/alerts', (req, res) => {
+  res.json(metrics.alerts);
+});
+
+app.get('/api/system', async (req, res) => {
+  const data = await si.getAllData();
+  res.json(data);
+});
+
+// Start Metrics Collection Loop
+const UPDATE_INTERVAL = parseInt(process.env.UPDATE_INTERVAL) || 2000;
+
+setInterval(async () => {
+  const data = await collectMetrics();
+  if (data) {
+    broadcast({
+      type: 'update',
+      data
+    });
+  }
+}, UPDATE_INTERVAL);
+
+// Daily Cleanup
+ cron.schedule('0 0 * * *', () => {
+  logger.info('Running daily cleanup');
+  metrics.alerts = metrics.alerts.filter(a => 
+    Date.now() - a.timestamp < 24 * 60 * 60 * 1000
+  );
+});
+
+// Start Server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  logger.info(`🚀 Enterprise Dashboard v2.0 running on port ${PORT}`);
+  logger.info(`📊 WebSocket endpoint: ws://localhost:${PORT}`);
+  logger.info(`🔍 API endpoint: http://localhost:${PORT}/api`);
+});
+
+// Graceful Shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    logger.info('Server closed');
+    process.exit(0);
+  });
+});
+
+module.exports = { app, server };

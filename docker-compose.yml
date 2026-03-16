@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  dashboard:
+    build: .
+    container_name: enterprise-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - UPDATE_INTERVAL=2000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    networks:
+      - dashboard-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.local`)"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
+
+  # Optional: Datenbank für historische Daten
+  influxdb:
+    image: influxdb:2.7
+    container_name: dashboard-influxdb
+    restart: unless-stopped
+    environment:
+      - INFLUXDB_DB=dashboard
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin123
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    networks:
+      - dashboard-net
+
+  # Optional: Grafana für erweiterte Visualisierung
+  grafana:
+    image: grafana/grafana:latest
+    container_name: dashboard-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - dashboard-net
+
+networks:
+  dashboard-net:
+    driver: bridge
+
+volumes:
+  influxdb-data:
+  grafana-data:
