@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏢 Enterprise Dashboard - DEMO</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .demo-banner {
+            background: linear-gradient(90deg, #f39c12, #e74c3c);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .demo-banner a {
+            color: #fff;
+            text-decoration: underline;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .module {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        
+        .module-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .module-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        
+        .module h2 {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-fill.cpu { background: linear-gradient(90deg, #ff6b6b, #ee5a5a); }
+        .progress-fill.memory { background: linear-gradient(90deg, #4ecdc4, #44a08d); }
+        .progress-fill.disk { background: linear-gradient(90deg, #ffe66d, #f4d03f); }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-running { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .status-stopped { background: #e74c3c; }
+        .status-warning { background: #f39c12; }
+        
+        .log-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+        
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .log-entry.error { color: #ff6b6b; }
+        .log-entry.warning { color: #ffe66d; }
+        .log-entry.info { color: #4ecdc4; }
+        
+        .process-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .process-item {
+            display: grid;
+            grid-template-columns: 60px 60px 1fr;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 0.85em;
+        }
+        
+        .process-cpu { color: #ff6b6b; font-weight: bold; }
+        .process-mem { color: #4ecdc4; font-weight: bold; }
+        .process-name { 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+            opacity: 0.9;
+        }
+        
+        .network-connections {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .connection-line {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .docker-container {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+        
+        .docker-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .docker-status {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        
+        .refresh-indicator {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-banner">
+        🎭 DEMO MODUS - Dies ist eine statische Demo mit simulierten Daten.
+        <br>
+        Für das volle Dashboard mit Echtzeit-Daten: <a href="https://github.com/DEIN-USERNAME/enterprise-dashboard">GitHub Repository</a>
+    </div>
+    
+    <div class="refresh-indicator">
+        🟢 Demo • Simulierte Daten
+    </div>
+    
+    <div class="header">
+        <h1>🏢 Enterprise Dashboard</h1>
+        <p>System-Überwachung in Echtzeit • Vollständige Transparenz</p>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- Modul 1: System-Monitor -->
+        <div class="module">
+            <div class="module-header">
+                <span class="module-icon">💻</span>
+                <h2>System-Monitor</h2>
+            </div>
+            
+            <div class="metric">
+                <span class="metric-label">CPU-Auslastung</span>
+                <span class="metric-value" id="cpu-value">23%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill cpu" id="cpu-bar" style="width: 23%"></div>
+            </div>
+            
+            <div class="metric" style="margin-top: 15px;">
+                <span class="metric-label">RAM-Nutzung</span>
+                <span class="metric-value" id="mem-value">4.2 / 16 GB (26%)</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill memory" id="mem-bar" style="width: 26%"></div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-label">/</span>
+                    <span class="metric-value">45 / 120 GB (38%)</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill disk" style="width: 38%"></div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-label">Netzwerk (↓/↑)</span>
+                    <span class="metric-value" id="network-value">1.2 / 0.8 MB/s</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modul 2: Prozess-Manager -->
+        <div class="module">
+            <div class="module-header">
+                <span class="module-icon">⚙️</span>
+                <h2>Top-Prozesse (nach CPU)</h2>
+            </div>
+            <div class="process-list" id="process-list">
+                <div class="process-item">
+                    <span class="process-cpu">12.5%</span>
+                    <span class="process-mem">8.2%</span>
+                    <span class="process-name">node server.js</span>
+                </div>
+                <div class="process-item">
+                    <span class="process-cpu">8.3%</span>
+                    <span class="process-mem">4.1%</span>
+                    <span class="process-name">python3 api/server.py</span>
+                </div>
+                <div class="process-item">
+                    <span class="process-cpu">3.2%</span>
+                    <span class="process-mem">2.8%</span>
+                    <span class="process-name">openclaw-gateway</span>
+                </div>
+                <div class="process-item">
+                    <span class="process-cpu">1.8%</span>
+                    <span class="process-mem">1.5%</span>
+                    <span class="process-name">sshd</span>
+                </div>
+                <div class="process-item">
+                    <span class="process-cpu">0.5%</span>
+                    <span class="process-mem">0.8%</span>
+                    <span class="process-name">systemd</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modul 3: Docker-Übersicht -->
+        <div class="module">
+            <div class="module-header">
+                <span class="module-icon">🐳</span>
+                <h2>Docker-Container</h2>
+            </div>
+            <div id="docker-list">
+                <div class="docker-container">
+                    <span class="status-indicator status-running"></span>
+                    <span class="docker-name">openclaw</span>
+                    <span class="docker-status">Up 3 hours</span>
+                </div>
+                <div class="docker-container">
+                    <span class="status-indicator status-running"></span>
+                    <span class="docker-name">traefik</span>
+                    <span class="docker-status">Up 3 hours</span>
+                </div>
+                <div class="docker-container">
+                    <span class="status-indicator status-running"></span>
+                    <span class="docker-name">ollama</span>
+                    <span class="docker-status">Up 2 days</span>
+                </div>
+                <div class="docker-container">
+                    <span class="status-indicator status-stopped"></span>
+                    <span class="docker-name">redis-cache</span>
+                    <span class="docker-status">Exited (0) 5 days ago</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modul 4: Netzwerk-Dashboard -->
+        <div class="module">
+            <div class="module-header">
+                <span class="module-icon">🌐</span>
+                <h2>Netzwerk-Verbindungen</h2>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Aktive Verbindungen (Ports)</span>
+            </div>
+            <div class="network-connections" id="network-connections">
+                <div class="connection-line">tcp   LISTEN  0  128  0.0.0.0:3000</div>
+                <div class="connection-line">tcp   LISTEN  0  128  0.0.0.0:8080</div>
+                <div class="connection-line">tcp   LISTEN  0  128  0.0.0.0:22</div>
+                <div class="connection-line">tcp   ESTAB   0  0  192.168.1.100:22  192.168.1.50:54321</div>
+                <div class="connection-line">udp   UNCONN  0  0  0.0.0.0:68</div>
+            </div>
+        </div>
+        
+        <!-- Modul 5: Echtzeit-Logs -->
+        <div class="module" style="grid-column: span 2;">
+            <div class="module-header">
+                <span class="module-icon">📜</span>
+                <h2>System-Logs (Letzte 50 Zeilen)</h2>
+            </div>
+            <div class="log-container" id="log-container">
+                <div class="log-entry info">Mar 16 14:32:15 server systemd[1]: Started OpenClaw Gateway Service</div>
+                <div class="log-entry info">Mar 16 14:32:16 server node[1234]: WebSocket server listening on port 8080</div>
+                <div class="log-entry warning">Mar 16 14:35:22 server kernel: TCP: request_sock_TCP: Possible SYN flooding on port 80</div>
+                <div class="log-entry info">Mar 16 14:40:01 server CRON[2345]: (root) CMD (/usr/local/bin/backup.sh)</div>
+                <div class="log-entry error">Mar 16 14:42:18 server dockerd[987]: Error response from daemon: container "abc123" not found</div>
+                <div class="log-entry info">Mar 16 14:45:33 server sshd[3456]: Accepted publickey for admin from 192.168.1.50</div>
+                <div class="log-entry info">Mar 16 14:50:12 server systemd[1]: Reloaded The nginx HTTP Server</div>
+                <div class="log-entry warning">Mar 16 14:55:47 server kernel: [UFW BLOCK] IN=eth0 OUT= MAC=... SRC=10.0.0.5</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Demo: Simuliere leichte Werte-Änderungen
+        setInterval(() => {
+            const cpu = 20 + Math.random() * 15;
+            document.getElementById('cpu-value').textContent = cpu.toFixed(1) + '%';
+            document.getElementById('cpu-bar').style.width = cpu + '%';
+            
+            const rx = (0.5 + Math.random() * 2).toFixed(1);
+            const tx = (0.3 + Math.random() * 1.5).toFixed(1);
+            document.getElementById('network-value').textContent = rx + ' / ' + tx + ' MB/s';
+        }, 2000);
+    </script>
+</body>
+</html>

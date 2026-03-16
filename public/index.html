@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏢 Enterprise Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .module {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .module:hover {
+            transform: translateY(-5px);
+        }
+        
+        .module-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .module-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        
+        .module h2 {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .metric:last-child {
+            border-bottom: none;
+        }
+        
+        .metric-label {
+            opacity: 0.8;
+            font-size: 0.9em;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-fill.cpu { background: linear-gradient(90deg, #ff6b6b, #ee5a5a); }
+        .progress-fill.memory { background: linear-gradient(90deg, #4ecdc4, #44a08d); }
+        .progress-fill.disk { background: linear-gradient(90deg, #ffe66d, #f4d03f); }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-running { background: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+        .status-stopped { background: #e74c3c; }
+        .status-warning { background: #f39c12; }
+        
+        .log-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+        
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .log-entry.error { color: #ff6b6b; }
+        .log-entry.warning { color: #ffe66d; }
+        .log-entry.info { color: #4ecdc4; }
+        
+        .process-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .process-item {
+            display: grid;
+            grid-template-columns: 60px 60px 1fr;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 0.85em;
+        }
+        
+        .process-cpu { color: #ff6b6b; font-weight: bold; }
+        .process-mem { color: #4ecdc4; font-weight: bold; }
+        .process-name { 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+            opacity: 0.9;
+        }
+        
+        .network-connections {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .connection-line {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .docker-container {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+        
+        .docker-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .docker-status {
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="refresh-indicator">
+        🟢 Live • Aktualisiert alle 2s
+    </div>
+    
+    <div class="header">
+        <h1>🏢 Enterprise Dashboard</h1>
+        <p>System-Überwachung in Echtzeit • Vollständige Transparenz</p>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- Modul 1: System-Monitor -->
+        <div class="module">
+            <div class="module-header">
+                <span class="module-icon">💻</span>
+                <h2>System-Monitor</h2>
+            </div>
+            
+            <div class="metric">
+                <span class="metric-label">CPU-Auslastung</span>
+                <span class="metric-value" id="cpu-value">--%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill cpu" id="cpu-bar" style="width: 0%"></div>
+            </div>
+            
+            <div class="metric" style="margin-top: 15px;">
+                <span class="metric-label">RAM-Nutzung</span>
+                <span class="metric-value" id="mem-value">-- / -- MB</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill memory" id="mem-bar" style="width: 0%"></div>
+            </div>
+            
+            <div id="disk-info" style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-label">Disk-Info wird geladen...</span>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-label">Netzwerk (↓/↑)</span>
+                    <span class="metric-value" id="network-value">-- / -- KB/s</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modul 2: Prozess-Manager -->
+        <div class="module">
+            <div class="module-header">
+                <span class="module-icon">⚙️</span>
+                <h2>Top-Prozesse (nach CPU)</h2>
+            </div>
+            <div class="process-list" id="process-list">
+                <div class="metric">Lade Prozesse...</div>
+            </div>
+        </div>
+        
+        <!-- Modul 3: Docker-Übersicht -->
+        <div class="module">
+            <div class="module-header">
+                <span class="module-icon">🐳</span>
+                <h2>Docker-Container</h2>
+            </div>
+            <div id="docker-list">
+                <div class="metric">Lade Container...</div>
+            </div>
+        </div>
+        
+        <!-- Modul 4: Netzwerk-Dashboard -->
+        <div class="module">
+            <div class="module-header">
+                <span class="module-icon">🌐</span>
+                <h2>Netzwerk-Verbindungen</h2>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Aktive Verbindungen (Ports)</span>
+            </div>
+            <div class="network-connections" id="network-connections">
+                Lade Verbindungen...
+            </div>
+        </div>
+        
+        <!-- Modul 5: Echtzeit-Logs -->
+        <div class="module" style="grid-column: span 2;">
+            <div class="module-header">
+                <span class="module-icon">📜</span>
+                <h2>System-Logs (Letzte 50 Zeilen)</h2>
+            </div>
+            <div class="log-container" id="log-container">
+                Lade Logs...
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // WebSocket-Verbindung für Echtzeit-Updates
+        const ws = new WebSocket(`ws://${window.location.host}`);
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'system') {
+                updateSystemRealtime(data.data);
+            }
+        };
+        
+        function updateSystemRealtime(data) {
+            // CPU
+            document.getElementById('cpu-value').textContent = data.cpu + '%';
+            document.getElementById('cpu-bar').style.width = data.cpu + '%';
+            
+            // Memory
+            document.getElementById('mem-value').textContent = 
+                `${data.memory.used} / ${data.memory.total} MB (${data.memory.percentage}%)`;
+            document.getElementById('mem-bar').style.width = data.memory.percentage + '%';
+            
+            // Network
+            const rx = (data.network[0]?.rx_sec / 1024).toFixed(1) || 0;
+            const tx = (data.network[0]?.tx_sec / 1024).toFixed(1) || 0;
+            document.getElementById('network-value').textContent = `${rx} / ${tx} KB/s`;
+        }
+        
+        // API-Daten laden
+        async function loadSystemData() {
+            try {
+                const response = await fetch('/api/system');
+                const data = await response.json();
+                
+                // Disk-Info
+                const diskHtml = data.disk.map(d => `
+                    <div class="metric">
+                        <span class="metric-label">${d.fs}</span>
+                        <span class="metric-value">${d.used} / ${d.size} GB (${d.use}%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill disk" style="width: ${d.use}%"></div>
+                    </div>
+                `).join('');
+                document.getElementById('disk-info').innerHTML = diskHtml;
+            } catch (error) {
+                console.error('System data error:', error);
+            }
+        }
+        
+        async function loadProcesses() {
+            try {
+                const response = await fetch('/api/processes');
+                const data = await response.json();
+                
+                const html = data.processes.map(p => `
+                    <div class="process-item">
+                        <span class="process-cpu">${p.cpu}%</span>
+                        <span class="process-mem">${p.mem}%</span>
+                        <span class="process-name" title="${p.command}">${p.command}</span>
+                    </div>
+                `).join('');
+                document.getElementById('process-list').innerHTML = html;
+            } catch (error) {
+                console.error('Process data error:', error);
+            }
+        }
+        
+        async function loadDocker() {
+            try {
+                const response = await fetch('/api/docker');
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('docker-list').innerHTML = `
+                        <div class="metric">
+                            <span class="status-indicator status-warning"></span>
+                            Docker nicht verfügbar
+                        </div>`;
+                    return;
+                }
+                
+                const html = data.containers.map(c => {
+                    const isRunning = c.status.includes('Up');
+                    return `
+                        <div class="docker-container">
+                            <span class="status-indicator ${isRunning ? 'status-running' : 'status-stopped'}"></span>
+                            <span class="docker-name">${c.name}</span>
+                            <span class="docker-status">${c.status}</span>
+                        </div>
+                    `;
+                }).join('');
+                document.getElementById('docker-list').innerHTML = html || '<div class="metric">Keine Container gefunden</div>';
+            } catch (error) {
+                document.getElementById('docker-list').innerHTML = `
+                    <div class="metric">
+                        <span class="status-indicator status-stopped"></span>
+                        Docker-Fehler: ${error.message}
+                    </div>`;
+            }
+        }
+        
+        async function loadNetwork() {
+            try {
+                const response = await fetch('/api/network');
+                const data = await response.json();
+                
+                const html = data.connections.map(c => `
+                    <div class="connection-line">${c}</div>
+                `).join('');
+                document.getElementById('network-connections').innerHTML = html;
+            } catch (error) {
+                console.error('Network data error:', error);
+            }
+        }
+        
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                const data = await response.json();
+                
+                const html = data.logs.map(log => {
+                    let className = 'log-entry';
+                    if (log.includes('ERROR') || log.includes('error')) className += ' error';
+                    else if (log.includes('WARN')) className += ' warning';
+                    else if (log.includes('INFO')) className += ' info';
+                    return `<div class="${className}">${log}</div>`;
+                }).join('');
+                document.getElementById('log-container').innerHTML = html;
+            } catch (error) {
+                console.error('Logs error:', error);
+            }
+        }
+        
+        // Initiales Laden
+        loadSystemData();
+        loadProcesses();
+        loadDocker();
+        loadNetwork();
+        loadLogs();
+        
+        // Periodisches Aktualisieren
+        setInterval(loadProcesses, 5000);
+        setInterval(loadDocker, 10000);
+        setInterval(loadNetwork, 10000);
+        setInterval(loadLogs, 10000);
+    </script>
+</body>
+</html>
