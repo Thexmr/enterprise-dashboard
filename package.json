@@ -23,7 +23,7 @@
     "compression": "^1.7.4",
     "helmet": "^7.1.0",
     "dotenv": "^16.3.1",
-    "node-cron": "^3.0.3",
+    "node-cron": "^4.2.1",
     "winston": "^3.11.0",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
